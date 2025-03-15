@@ -42,19 +42,35 @@ test("should show hotel detail", async ({ page }) => {
 test("should book hotel", async ({ page }) => {
   await page.goto(UI_URL);
 
-  await page.getByPlaceholder("Where are you going?").fill("Dublin");
+  await page.getByPlaceholder("Where are you going?").fill("Test City");
 
-  const date = new Date();
-  date.setDate(date.getDate() + 3);
-  const formattedDate = date.toISOString().split("T")[0];
-  await page.getByPlaceholder("Check-out Date").fill(formattedDate);
+  const today = new Date();
+  const checkInDate = today.toISOString().split("T")[0];
+  const checkOutDate = new Date(today);
+  checkOutDate.setDate(today.getDate() + 3);
+  const formattedCheckOutDate = checkOutDate.toISOString().split("T")[0];
+
+  await page.locator(".react-datepicker-wrapper input").nth(0).click();
+  await page
+    .locator(".react-datepicker")
+    .getByText(today.getDate().toString())
+    .click();
+
+  await page.locator(".react-datepicker-wrapper input").nth(1).click();
+  await page
+    .locator(".react-datepicker")
+    .getByText(checkOutDate.getDate().toString())
+    .click();
+
+  await page.waitForTimeout(500);
 
   await page.getByRole("button", { name: "Search" }).click();
+  await page.waitForTimeout(1000);
 
-  await page.getByText("Dublin Getaways").click();
+  await page.getByText("Test Hotel").click();
   await page.getByRole("button", { name: "Book now" }).click();
 
-  await expect(page.getByText("Total Cost: £357.00")).toBeVisible();
+  await expect(page.getByText("Total Cost: $300.00")).toBeVisible();
 
   const stripeFrame = page.frameLocator("iframe").first();
   await stripeFrame
@@ -68,5 +84,5 @@ test("should book hotel", async ({ page }) => {
   await expect(page.getByText("Booking Saved!")).toBeVisible();
 
   await page.getByRole("link", { name: "My Bookings" }).click();
-  await expect(page.getByText("Dublin Getaways")).toBeVisible();
+  await expect(page.getByText("Test Hotel")).toBeVisible();
 });
