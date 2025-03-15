@@ -39,7 +39,6 @@ const Search = () => {
 
   const handleStarsChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const starRating = event.target.value;
-
     setSelectedStars((prevStars) =>
       event.target.checked
         ? [...prevStars, starRating]
@@ -51,7 +50,6 @@ const Search = () => {
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const hotelType = event.target.value;
-
     setSelectedHotelTypes((prevHotelTypes) =>
       event.target.checked
         ? [...prevHotelTypes, hotelType]
@@ -61,7 +59,6 @@ const Search = () => {
 
   const handleFacilityChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const facility = event.target.value;
-
     setSelectedFacilities((prevFacilities) =>
       event.target.checked
         ? [...prevFacilities, facility]
@@ -72,7 +69,8 @@ const Search = () => {
   return (
     <div className="container mx-auto max-w-7xl px-4 md:px-8 lg:px-12">
       <div className="grid grid-cols-1 lg:grid-cols-[250px_1fr] gap-5">
-        <div className="rounded-lg border border-slate-300 p-5 h-fit sticky top-10">
+        {/* Sidebar Filters */}
+        <div className="rounded-lg border border-slate-300 p-5 h-fit lg:sticky top-10 md:mb-5 lg:mb-0">
           <div className="space-y-5">
             <h3 className="text-lg font-semibold border-b border-slate-300 pb-5">
               Filter by:
@@ -95,6 +93,8 @@ const Search = () => {
             />
           </div>
         </div>
+
+        {/* Hotel Results */}
         <div className="flex flex-col gap-5">
           <div className="flex justify-between items-center">
             <span className="text-xl font-bold">
@@ -116,9 +116,15 @@ const Search = () => {
               </option>
             </select>
           </div>
-          {hotelData?.data.map((hotel) => (
-            <SearchResultsCard key={hotel._id} hotel={hotel} />
-          ))}
+
+          {/* Hotel Cards */}
+          <div className="flex flex-col gap-5">
+            {hotelData?.data.map((hotel) => (
+              <SearchResultsCard key={hotel._id} hotel={hotel} />
+            ))}
+          </div>
+
+          {/* Pagination */}
           <div>
             <Pagination
               page={hotelData?.pagination.page || 1}
