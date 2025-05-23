@@ -5,6 +5,11 @@ export type UserType = {
   email: string;
   firstName: string;
   lastName: string;
+  country: string;
+  phoneNumber: string;
+  resetToken?: string;
+  resetTokenExpiry?: number;
+  role: "user" | "admin";
 };
 
 export type HotelType = {
@@ -22,7 +27,26 @@ export type HotelType = {
   starRating: number;
   imageUrls: string[];
   lastUpdated: Date;
+  roomTypes: {
+    name: string;
+    price: number;
+    adults: number;
+    children: number;
+    totalRooms: number;
+  }[];
   bookings: BookingType[];
+  reviews: {
+    _id: string;
+    userId: string;
+    user: string;
+    comment: string;
+    rating: number;
+    date: Date;
+  }[];
+  location: {
+    lat: number;
+    lng: number;
+  };
 };
 
 export type BookingType = {
@@ -36,10 +60,26 @@ export type BookingType = {
   checkIn: Date;
   checkOut: Date;
   totalCost: number;
+  roomTypeName: string;
+  paymentIntentId: string;
+  status: "confirmed" | "canceled";
+  refunded: boolean;
+};
+
+export type RoomType = {
+  name: string;
+  price: number;
+  adults: number;
+  children: number;
+  totalRooms: number;
+};
+
+export type HotelWithMatchedRoom = HotelType & {
+  matchedRoom?: RoomType;
 };
 
 export type HotelSearchResponse = {
-  data: HotelType[];
+  data: HotelWithMatchedRoom[];
   pagination: {
     total: number;
     page: number;

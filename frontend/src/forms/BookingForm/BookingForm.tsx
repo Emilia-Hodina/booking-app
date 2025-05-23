@@ -6,7 +6,7 @@ import {
 import { CardElement, useElements, useStripe } from "@stripe/react-stripe-js";
 import { StripeCardElement } from "@stripe/stripe-js";
 import { UseSearchContext } from "../../contexts/SearchContext";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { useMutation } from "@tanstack/react-query";
 import * as apiClient from "../../api-client";
 import { UseAppContext } from "../../contexts/AppContext";
@@ -14,6 +14,7 @@ import { UseAppContext } from "../../contexts/AppContext";
 type Props = {
   currentUser: UserType;
   paymentIntent: PaymentIntentResponse;
+  roomTypeName: string;
 };
 
 export type BookingFormData = {
@@ -27,21 +28,28 @@ export type BookingFormData = {
   hotelId: string;
   paymentIntentId: string;
   totalCost: number;
+  roomTypeName: string;
 };
 
-const BookingForm = ({ currentUser, paymentIntent }: Props) => {
+const BookingForm = ({ currentUser, paymentIntent, roomTypeName }: Props) => {
   const stripe = useStripe();
   const elements = useElements();
 
   const search = UseSearchContext();
   const { hotelId } = useParams();
+  const navigate = useNavigate();
 
   const { showToast } = UseAppContext();
+
+  console.log("BookingForm paymentIntent", roomTypeName);
 
   const { mutate: bookRoom, isPending } = useMutation({
     mutationFn: apiClient.createRoomBooking,
     onSuccess: () => {
       showToast({ message: "Booking Saved!", type: "SUCCESS" });
+      setTimeout(() => {
+        navigate("/my-bookings");
+      }, 1000); // Wait 1 second before redirecting
     },
     onError: () => {
       showToast({ message: "Error saving booking", type: "ERROR" });
@@ -75,7 +83,11 @@ const BookingForm = ({ currentUser, paymentIntent }: Props) => {
     });
 
     if (result.paymentIntent?.status === "succeeded") {
-      bookRoom({ ...formData, paymentIntentId: result.paymentIntent.id });
+      bookRoom({
+        ...formData,
+        roomTypeName,
+        paymentIntentId: result.paymentIntent.id,
+      });
     }
   };
 
@@ -117,7 +129,6 @@ const BookingForm = ({ currentUser, paymentIntent }: Props) => {
           />
         </label>
       </div>
-
       <div className="space-y-2">
         <h2 className="text-xl font-semibold">Your Price Summary</h2>
 
@@ -128,7 +139,6 @@ const BookingForm = ({ currentUser, paymentIntent }: Props) => {
           <div className="text-xs">Includes taxes and charges</div>
         </div>
       </div>
-
       <div className="space-y-2">
         <h3 className="text-xl font-semibold"> Payment Details</h3>
         <CardElement
@@ -136,7 +146,6 @@ const BookingForm = ({ currentUser, paymentIntent }: Props) => {
           className="border rounded-md p-2 text-sm"
         />
       </div>
-
       <div className="flex justify-end">
         <button
           disabled={isPending}
