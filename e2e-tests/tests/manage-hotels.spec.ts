@@ -27,17 +27,33 @@ test("should allow user to add a hotel", async ({ page }) => {
   await page.locator('[name="country"]').fill("Test Country");
   await page
     .locator('[name="description"]')
-    .fill("This is a description for the Test Hotel");
-  await page.locator('[name="pricePerNight"]').fill("100");
+    .fill("This is a description for our resort");
   await page.selectOption('select[name="starRating"]', "3");
 
   await page.getByText("Budget").click();
-
   await page.getByLabel("Free Wifi").check();
   await page.getByLabel("Parking").check();
 
-  await page.locator('[name="adultCount"]').fill("2");
-  await page.locator('[name="childCount"]').fill("4");
+  await page
+    .locator(".leaflet-container")
+    .click({ position: { x: 200, y: 100 } });
+
+  const latField = page.locator('[name="location.lat"]');
+  const lngField = page.locator('[name="location.lng"]');
+  await expect(latField).not.toHaveValue("");
+  await expect(lngField).not.toHaveValue("");
+
+  const latValue = await latField.inputValue();
+  const lngValue = await lngField.inputValue();
+  console.log("Selected lat/lng:", latValue, lngValue);
+
+  await page
+    .locator('input[placeholder="Ex: Double Room"]')
+    .fill("Double Room");
+  await page.locator('input[type="number"]').nth(0).fill("120");
+  await page.locator('input[type="number"]').nth(1).fill("2");
+  await page.locator('input[type="number"]').nth(2).fill("1");
+  await page.locator('input[type="number"]').nth(3).fill("5");
 
   await page.setInputFiles('[name="imageFiles"]', [
     path.join(__dirname, "files", "1.png"),
@@ -57,8 +73,6 @@ test("should display hotels", async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByText("Test City, Test Country")).toBeVisible();
   await expect(page.getByText("Budget")).toBeVisible();
-  await expect(page.getByText("$100 per night")).toBeVisible();
-  await expect(page.getByText("2 adults, 4 children")).toBeVisible();
   await expect(page.getByText("3 Star Rating")).toBeVisible();
 
   await expect(
@@ -83,4 +97,19 @@ test("should edit hotel", async ({ page }) => {
   await expect(page.locator('[name="name"]')).toHaveValue("Test Hotel UPDATED");
   await page.locator('[name="name"]').fill("Test Hotel");
   await page.getByRole("button", { name: "Save" }).click();
+});
+
+test("should delete hotel", async ({ page }) => {
+  await page.goto(`${UI_URL}my-hotels`);
+
+  page.once("dialog", async (dialog) => {
+    expect(dialog.message()).toContain(
+      "Are you sure you want to delete this hotel?"
+    );
+    await dialog.accept();
+  });
+
+  await page.getByRole("button", { name: "Delete" }).first().click();
+
+  await expect(page.getByText("Test Hotel")).not.toBeVisible();
 });
