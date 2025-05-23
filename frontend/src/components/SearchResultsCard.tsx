@@ -1,12 +1,32 @@
-import { Link } from "react-router-dom";
-import { HotelType } from "../../../backend/src/shared/types";
+import { Link, useNavigate } from "react-router-dom";
+import { HotelWithMatchedRoom } from "../../../backend/src/shared/types";
 import { AiFillStar } from "react-icons/ai";
+import { FaRegHeart, FaHeart } from "react-icons/fa";
+import { UseFavorites } from "../contexts/FavoritesContext";
+import { UseAppContext } from "../contexts/AppContext";
 
 type Props = {
-  hotel: HotelType;
+  hotel: HotelWithMatchedRoom;
 };
 
 const SearchResultsCard = ({ hotel }: Props) => {
+  const { favorites, toggleFavorite } = UseFavorites();
+  const { isLoggedIn } = UseAppContext();
+  const navigate = useNavigate();
+
+  const isFavorited = favorites.some((fav) => fav._id === hotel._id);
+
+  const handleFavoriteClick = () => {
+    if (!isLoggedIn) {
+      // Store pending favorite in localStorage and redirect to sign-in
+      localStorage.setItem("pendingFavorite", JSON.stringify(hotel));
+      navigate("/sign-in");
+      return;
+    }
+
+    toggleFavorite(hotel);
+  };
+
   return (
     <div className="grid grid-cols-1 xl:grid-cols-[2fr_3fr] border border-slate-300 rounded-lg p-8 gap-8">
       <div className="w-full h-[300px]">
@@ -18,13 +38,22 @@ const SearchResultsCard = ({ hotel }: Props) => {
       </div>
       <div className="grid grid-rows-[1fr_2fr_1fr]">
         <div>
-          <div className="flex items-center">
-            <span className="flex">
-              {Array.from({ length: hotel.starRating }).map((_, index) => (
-                <AiFillStar key={index} className="fill-yellow-400" />
-              ))}
-            </span>
-            <span className="ml-1 text-sm">{hotel.type}</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center">
+              <span className="flex">
+                {Array.from({ length: hotel.starRating }).map((_, index) => (
+                  <AiFillStar key={index} className="fill-yellow-400" />
+                ))}
+              </span>
+              <span className="ml-1 text-sm">{hotel.type}</span>
+            </div>
+            {/* Favorite Heart Button */}
+            <button
+              onClick={handleFavoriteClick}
+              className="text-xl text-red-500"
+            >
+              {isFavorited ? <FaHeart /> : <FaRegHeart />}
+            </button>
           </div>
           <Link
             to={`/detail/${hotel._id}`}
@@ -48,13 +77,22 @@ const SearchResultsCard = ({ hotel }: Props) => {
                 {facility}
               </span>
             ))}
-            <span className="text-sm">
-              {hotel.facilities.length > 3 &&
-                `+${hotel.facilities.length - 3} more`}
-            </span>
+            {hotel.facilities.length > 3 && (
+              <span className="text-sm">
+                +{hotel.facilities.length - 3} more
+              </span>
+            )}
           </div>
           <div className="flex flex-col items-end gap-1">
-            <span className="font-bold">${hotel.pricePerNight} per night</span>
+            {hotel.matchedRoom?.name && hotel.matchedRoom?.price && (
+              <span className="text-xs text-slate-600">
+                {hotel.matchedRoom.name} –
+                <span className="text-black font-bold text-base ml-1">
+                  ${hotel.matchedRoom.price} per night
+                </span>
+              </span>
+            )}
+
             <Link
               to={`/detail/${hotel._id}`}
               className="bg-blue-600 text-white h-full p-2 font-bold text-xl max-w-fit hover:bg-blue-500"
