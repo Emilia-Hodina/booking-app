@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import * as apiClient from "../api-client";
 import BookingForm from "../forms/BookingForm/BookingForm";
 import { UseSearchContext } from "../contexts/SearchContext";
-import { useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import BookingDetailsSummary from "../components/BookingDetailsSummary";
 import { Elements } from "@stripe/react-stripe-js";
@@ -14,22 +14,45 @@ const Booking = () => {
   const { stripePromise } = UseAppContext();
 
   const [numberOfNights, setNumberOfNights] = useState<number>(0);
+  const [roomTypeName, setRoomTypeName] = useState<string>("");
+
+  const location = useLocation();
+  const state = location.state as {
+    selectedRoom?: { name: string; price: number };
+    roomTypeName?: string;
+    nights?: number;
+  };
+
+  console.log("Booking state", state.selectedRoom?.name);
 
   useEffect(() => {
-    if (search.checkIn && search.checkOut) {
-      const nights =
-        Math.abs(search.checkOut.getTime() - search.checkIn.getTime()) /
-        (1000 * 60 * 60 * 24);
-      setNumberOfNights(Math.ceil(nights));
+    if (state?.roomTypeName) {
+      setRoomTypeName(state.roomTypeName);
+    } else if (state?.selectedRoom?.name) {
+      setRoomTypeName(state.selectedRoom.name); // fallback
     }
-  }, [search.checkIn, search.checkOut]);
+
+    if (state?.nights) {
+      setNumberOfNights(state.nights);
+    }
+  }, [state]);
+
+  // useEffect(() => {
+  //   if (search.checkIn && search.checkOut) {
+  //     const nights =
+  //       Math.abs(search.checkOut.getTime() - search.checkIn.getTime()) /
+  //       (1000 * 60 * 60 * 24);
+  //     setNumberOfNights(Math.ceil(nights));
+  //   }
+  // }, [search.checkIn, search.checkOut]);
 
   const { data: paymentIntentData } = useQuery({
     queryKey: ["createPaymentIntent"],
     queryFn: () =>
       apiClient.createPaymentIntent(
         hotelId as string,
-        numberOfNights.toString()
+        numberOfNights.toString(),
+        roomTypeName.toString()
       ),
     enabled: !!hotelId && numberOfNights > 0,
   });
@@ -70,6 +93,7 @@ const Booking = () => {
             <BookingForm
               currentUser={currentUser}
               paymentIntent={paymentIntentData}
+              roomTypeName={roomTypeName}
             />
           </Elements>
         )}
