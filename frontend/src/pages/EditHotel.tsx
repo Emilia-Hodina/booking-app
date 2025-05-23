@@ -9,7 +9,7 @@ const EditHotel = () => {
   const { showToast } = UseAppContext();
 
   const { data: hotel } = useQuery({
-    queryKey: ["fetchMyHotelById", hotelId], // Pass hotelId for proper cache handling
+    queryKey: ["fetchMyHotelById", hotelId],
     queryFn: () => apiClient.fetchMyHotelById(hotelId || ""),
     enabled: !!hotelId,
   });
