@@ -2,10 +2,10 @@ import { FormProvider, useForm } from "react-hook-form";
 import DetailsSection from "./DetailsSection";
 import TypeSection from "./TypeSection";
 import FacilitiesSection from "./FacilitiesSection";
-import GuestsSection from "./GuestsSection";
 import ImagesSection from "./ImagesSection";
 import { HotelType } from "../../../../backend/src/shared/types";
 import { useEffect } from "react";
+import RoomTypesSection from "./RoomsTypesSection";
 
 export type HotelFormData = {
   name: string;
@@ -20,6 +20,17 @@ export type HotelFormData = {
   imageUrls: string[];
   adultCount: number;
   childCount: number;
+  location: {
+    lat: number;
+    lng: number;
+  };
+  roomTypes: {
+    name: string;
+    price: number;
+    adults: number;
+    children: number;
+    totalRooms: number;
+  }[];
 };
 
 type Props = {
@@ -46,14 +57,29 @@ const ManageHotelForm = ({ onSave, isLoading, hotel }: Props) => {
     formData.append("country", formDataJson.country);
     formData.append("description", formDataJson.description);
     formData.append("type", formDataJson.type);
-    formData.append("pricePerNight", formDataJson.pricePerNight.toString());
     formData.append("starRating", formDataJson.starRating.toString());
-    formData.append("adultCount", formDataJson.adultCount.toString());
-    formData.append("childCount", formDataJson.childCount.toString());
+    formData.append("location.lat", formDataJson.location.lat.toString());
+    formData.append("location.lng", formDataJson.location.lng.toString());
 
     formDataJson.facilities.forEach((facility, index) => {
       formData.append(`facilities[${index}]`, facility);
     });
+
+    formDataJson.roomTypes.forEach((room, index) => {
+      formData.append(`roomTypes[${index}][name]`, room.name);
+      formData.append(`roomTypes[${index}][price]`, room.price.toString());
+      formData.append(`roomTypes[${index}][adults]`, room.adults.toString());
+      formData.append(
+        `roomTypes[${index}][children]`,
+        room.children.toString()
+      );
+      formData.append(
+        `roomTypes[${index}][totalRooms]`,
+        room.totalRooms.toString()
+      );
+    });
+
+    console.log("Submitting roomTypes:", formDataJson.roomTypes);
 
     if (formDataJson.imageUrls) {
       formDataJson.imageUrls.forEach((url, index) => {
@@ -74,7 +100,7 @@ const ManageHotelForm = ({ onSave, isLoading, hotel }: Props) => {
         <DetailsSection />
         <TypeSection />
         <FacilitiesSection />
-        <GuestsSection />
+        <RoomTypesSection />
         <ImagesSection />
         <span className="flex justify-end">
           <button
