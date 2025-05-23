@@ -196,14 +196,15 @@ export const fetchHotelById = async (hotelId: string): Promise<HotelType> => {
 
 export const createPaymentIntent = async (
   hotelId: string,
-  numberOfNights: string
+  numberOfNights: string,
+  roomTypeName: string
 ): Promise<PaymentIntentResponse> => {
   const response = await fetch(
     `${API_BASE_URL}/api/hotels/${hotelId}/bookings/payment-intent`,
     {
       credentials: "include",
       method: "POST",
-      body: JSON.stringify({ numberOfNights }),
+      body: JSON.stringify({ numberOfNights, roomTypeName }),
       headers: {
         "Content-Type": "application/json",
       },
@@ -242,6 +243,289 @@ export const fetchMyBookings = async (): Promise<HotelType[]> => {
 
   if (!response.ok) {
     throw new Error("Unable to fetch bookings");
+  }
+
+  return response.json();
+};
+
+export const fetchFavorites = async (): Promise<HotelType[]> => {
+  const response = await fetch(`${API_BASE_URL}/api/favorites`, {
+    credentials: "include",
+  });
+  if (!response.ok) {
+    throw new Error("Error fetching favorites");
+  }
+  return response.json();
+};
+
+export const addFavorite = async (hotelId: string) => {
+  const response = await fetch(`${API_BASE_URL}/api/favorites/${hotelId}`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    const body = await response.json();
+    throw new Error(body.message);
+  }
+};
+
+export const removeFavorite = async (hotelId: string) => {
+  const response = await fetch(`${API_BASE_URL}/api/favorites/${hotelId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Error removing favorite");
+  }
+};
+
+export const forgotPassword = async ({ email }: { email: string }) => {
+  const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to send reset email.");
+  }
+};
+
+export const resetPassword = async ({
+  token,
+  password,
+}: {
+  token: string | null;
+  password: string;
+}) => {
+  const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ token, password }),
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to reset password.");
+  }
+};
+
+export const addHotelReview = async (
+  hotelId: string,
+  reviewData: { comment: string; rating: number }
+) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/hotels/${hotelId}/reviews`,
+    {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(reviewData),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Eroare la trimiterea recenziei");
+  }
+
+  return response.json(); // returns the new review
+};
+
+export const deleteHotelReview = async (hotelId: string, reviewId: string) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/hotels/${hotelId}/reviews/${reviewId}`,
+    {
+      method: "DELETE",
+      credentials: "include",
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Eroare la ștergerea recenziei");
+  }
+
+  return response.json(); // returns { message: "Recenzia a fost ștearsă cu succes" }
+};
+
+export const updateHotelReview = async (
+  hotelId: string,
+  reviewId: string,
+  updatedData: { comment: string; rating: number }
+) => {
+  const response = await fetch(
+    `${API_BASE_URL}/api/hotels/${hotelId}/reviews/${reviewId}`,
+    {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      credentials: "include",
+      body: JSON.stringify(updatedData),
+    }
+  );
+
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || "Failed to update review");
+  }
+
+  return response.json(); // returns updated review
+};
+
+export const updateUserProfile = async (data: {
+  firstName: string;
+  lastName: string;
+  email: string;
+  country: string;
+  phoneNumber: string;
+}) => {
+  const res = await fetch(`${API_BASE_URL}/api/users/update-profile`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to update profile");
+  }
+
+  return res.json();
+};
+
+export const getAdminDashboard = async () => {
+  const res = await fetch(`${API_BASE_URL}/api/admin/dashboard`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const errorData = await res.json();
+    throw new Error(errorData.message || "Failed to fetch admin dashboard");
+  }
+
+  return res.json();
+};
+
+export const getAllUsers = async () => {
+  const res = await fetch(`${API_BASE_URL}/api/admin/users`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch users");
+  return res.json();
+};
+
+export const deleteUser = async (userId: string) => {
+  const res = await fetch(`${API_BASE_URL}/api/admin/users/${userId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to delete user");
+};
+
+export const getAllHotels = async () => {
+  const res = await fetch(`${API_BASE_URL}/api/admin/hotels`, {
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to fetch hotels");
+  return res.json();
+};
+
+export const deleteHotel = async (hotelId: string) => {
+  const res = await fetch(`${API_BASE_URL}/api/admin/hotels/${hotelId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+  if (!res.ok) throw new Error("Failed to delete hotel");
+};
+
+export const deleteMyHotel = async (hotelId: string) => {
+  const res = await fetch(`${API_BASE_URL}/api/my-hotels/${hotelId}`, {
+    method: "DELETE",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to delete hotel");
+  }
+};
+
+export const getAdminMonthlyBookings = async () => {
+  const response = await fetch(`${API_BASE_URL}/api/admin/monthly-bookings`, {
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    throw new Error("Failed to fetch monthly bookings data");
+  }
+  return response.json();
+};
+
+export const getTopHotels = async () => {
+  const res = await fetch(`${API_BASE_URL}/api/admin/top-hotels`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch top hotels");
+  }
+
+  return res.json();
+};
+
+export const cancelBooking = async (bookingId: string) => {
+  const res = await fetch(
+    `${API_BASE_URL}/api/my-bookings/${bookingId}/cancel`,
+    {
+      method: "PUT",
+      credentials: "include",
+    }
+  );
+
+  if (!res.ok) {
+    throw new Error("Failed to cancel booking");
+  }
+
+  return res.json();
+};
+
+export const fetchAllBookings = async () => {
+  const res = await fetch(`${API_BASE_URL}/api/admin/bookings`, {
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    throw new Error("Failed to fetch bookings");
+  }
+
+  return res.json();
+};
+
+export const fetchAvailableRooms = async (
+  hotelId: string,
+  params: {
+    checkIn: string;
+    checkOut: string;
+    adultCount: number;
+    childCount: number;
+  }
+): Promise<{ roomTypes: HotelType["roomTypes"] }> => {
+  const query = new URLSearchParams({
+    checkIn: params.checkIn,
+    checkOut: params.checkOut,
+    adultCount: params.adultCount.toString(),
+    childCount: params.childCount.toString(),
+  }).toString();
+
+  const response = await fetch(
+    `/api/hotels/${hotelId}/available-rooms?${query}`
+  );
+  if (!response.ok) {
+    throw new Error("Failed to fetch available rooms");
   }
 
   return response.json();
