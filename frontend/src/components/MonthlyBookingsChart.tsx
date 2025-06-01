@@ -19,7 +19,6 @@ const MonthlyBookingsChart = () => {
     const fetchData = async () => {
       try {
         const response = await getAdminMonthlyBookings();
-        // Expected format: [{ month: 'Jan', bookings: 45, revenue: 12000 }, ...]
         setData(response);
       } catch (error) {
         console.error("Failed to fetch monthly bookings data:", error);
