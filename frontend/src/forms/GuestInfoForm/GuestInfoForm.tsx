@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import DatePicker from "react-datepicker";
 import { UseSearchContext } from "../../contexts/SearchContext";
 import { UseAppContext } from "../../contexts/AppContext";
@@ -32,6 +33,15 @@ const GuestInfoForm = ({
   const search = UseSearchContext();
   const { isLoggedIn } = UseAppContext();
   const navigate = useNavigate();
+
+  const [showRoomError, setShowRoomError] = useState(false);
+
+  useEffect(() => {
+    const timeout = setTimeout(() => {
+      setShowRoomError(!selectedRoom);
+    }, 200); // delay to prevent flicker
+    return () => clearTimeout(timeout);
+  }, [selectedRoom]);
 
   const minDate = new Date();
   const maxDate = new Date();
@@ -87,14 +97,18 @@ const GuestInfoForm = ({
 
   return (
     <div className="flex flex-col p-4 bg-blue-200 gap-4 sticky top-4 self-start">
-      <h3 className="text-md font-bold">
+      <h3 className="text-md font-bold min-h-[1.5rem]">
         {selectedRoom ? (
           <>
             {selectedRoom.name}
             {nights > 0 && ` – Total: $${totalCost}`}
           </>
         ) : (
-          <span className="text-sm text-red-600 font-medium">
+          <span
+            className={`text-sm font-medium transition-opacity duration-500 ${
+              showRoomError ? "opacity-100 text-red-600" : "opacity-0"
+            }`}
+          >
             Nu există camere disponibile. Te rugăm să modifici datele sau
             numărul de oaspeți.
           </span>

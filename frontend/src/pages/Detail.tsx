@@ -41,8 +41,6 @@ const Detail = () => {
   //   enabled: !!hotelId,
   // });
 
-  console.log("Hotel data:", hotel);
-
   const { data: currentUser } = useQuery({
     queryKey: ["currentUser"],
     queryFn: apiClient.fetchCurrentUser,

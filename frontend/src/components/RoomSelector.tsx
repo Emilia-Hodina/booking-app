@@ -1,8 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { HotelType } from "../../../backend/src/shared/types";
 import * as apiClient from "../api-client";
-import { useMemo } from "react";
 
 type Props = {
   hotelId: string;
@@ -52,28 +51,34 @@ const RoomSelector = ({
     [availableData]
   );
 
-  // 🔄 Auto-select first available room or clear selection if none
+  // 🔄 Auto-select first available room (with flicker prevention)
   useEffect(() => {
-    const anyAvailable = availableRooms.some((r) => r.isAvailable);
+    if (isLoading) return;
 
-    if (!anyAvailable) {
-      if (selectedRoom !== null) {
-        onSelect(null);
+    const timeout = setTimeout(() => {
+      const anyAvailable = availableRooms.some((r) => r.isAvailable);
+
+      if (!anyAvailable) {
+        if (selectedRoom !== null) {
+          onSelect(null);
+        }
+        return;
       }
-      return;
-    }
 
-    const selectedStillAvailable = availableRooms.find(
-      (r) => r.name === selectedRoom?.name && r.isAvailable
-    );
+      const selectedStillAvailable = availableRooms.find(
+        (r) => r.name === selectedRoom?.name && r.isAvailable
+      );
 
-    if (!selectedStillAvailable) {
-      const firstAvailable = availableRooms.find((room) => room.isAvailable);
-      if (firstAvailable) {
-        onSelect(firstAvailable);
+      if (!selectedStillAvailable) {
+        const firstAvailable = availableRooms.find((room) => room.isAvailable);
+        if (firstAvailable) {
+          onSelect(firstAvailable);
+        }
       }
-    }
-  }, [availableRooms, selectedRoom, onSelect]);
+    }, 100); // 💡 Small delay to avoid flicker
+
+    return () => clearTimeout(timeout);
+  }, [availableRooms, selectedRoom, onSelect, isLoading]);
 
   if (isLoading) {
     return (
@@ -83,10 +88,6 @@ const RoomSelector = ({
     );
   }
 
-  //   if (availableRooms.length === 0) {
-  //     return <p>Nu sunt camere disponibile pentru această selecție.</p>;
-  //   }
-
   return (
     <div className="bg-gray-100 h-full p-4 rounded-md space-y-4">
       <h3 className="text-lg font-semibold">Selectează tipul camerei</h3>
@@ -94,7 +95,7 @@ const RoomSelector = ({
       <div className="space-y-2">
         {availableRooms.map((room) => {
           const isAvailable = room.isAvailable;
-          const isSelected = selectedRoom?.name === room.name && isAvailable; // ✅ only show selected if available
+          const isSelected = selectedRoom?.name === room.name && isAvailable;
 
           return (
             <div
