@@ -1,4 +1,3 @@
-import { useForm } from "react-hook-form";
 import DatePicker from "react-datepicker";
 import { UseSearchContext } from "../../contexts/SearchContext";
 import { UseAppContext } from "../../contexts/AppContext";
@@ -7,40 +6,32 @@ import { HotelType } from "../../../../backend/src/shared/types";
 
 type Props = {
   hotelId: string;
-  selectedRoom: HotelType["roomTypes"][0];
-};
-
-type GuestInfoFormData = {
-  checkIn: Date;
-  checkOut: Date;
+  selectedRoom: HotelType["roomTypes"][0] | null;
+  checkIn: Date | null;
+  setCheckIn: (date: Date | null) => void;
+  checkOut: Date | null;
+  setCheckOut: (date: Date | null) => void;
   adultCount: number;
+  setAdultCount: (count: number) => void;
   childCount: number;
-  roomTypeName: string;
+  setChildCount: (count: number) => void;
 };
 
-const GuestInfoForm = ({ hotelId, selectedRoom }: Props) => {
+const GuestInfoForm = ({
+  hotelId,
+  selectedRoom,
+  checkIn,
+  setCheckIn,
+  checkOut,
+  setCheckOut,
+  adultCount,
+  setAdultCount,
+  childCount,
+  setChildCount,
+}: Props) => {
   const search = UseSearchContext();
   const { isLoggedIn } = UseAppContext();
   const navigate = useNavigate();
-
-  const {
-    watch,
-    register,
-    handleSubmit,
-    setValue,
-    formState: { errors },
-  } = useForm<GuestInfoFormData>({
-    defaultValues: {
-      checkIn: search.checkIn,
-      checkOut: search.checkOut,
-      adultCount: search.adultCount,
-      childCount: search.childCount,
-      roomTypeName: selectedRoom.name,
-    },
-  });
-
-  const checkIn = watch("checkIn");
-  const checkOut = watch("checkOut");
 
   const minDate = new Date();
   const maxDate = new Date();
@@ -55,130 +46,127 @@ const GuestInfoForm = ({ hotelId, selectedRoom }: Props) => {
     checkIn && checkOut && checkOut > checkIn
       ? calculateNights(checkIn, checkOut)
       : 0;
-  const totalCost = nights * selectedRoom.price;
 
-  const navigateWithBookingData = (
-    data: GuestInfoFormData,
-    redirectTo: string
-  ) => {
-    const nights = calculateNights(data.checkIn, data.checkOut);
+  const totalCost = selectedRoom ? nights * selectedRoom.price : 0;
+
+  const handleSubmit = () => {
+    if (!checkIn || !checkOut || !selectedRoom) return;
+
+    const nights = calculateNights(checkIn, checkOut);
     const totalCost = nights * selectedRoom.price;
 
-    search.saveSearchValues(
-      "",
-      data.checkIn,
-      data.checkOut,
-      data.adultCount,
-      data.childCount
-    );
+    search.saveSearchValues("", checkIn, checkOut, adultCount, childCount);
 
-    navigate(redirectTo, {
+    navigate(`/hotel/${hotelId}/booking`, {
       state: {
         selectedRoom: {
           name: selectedRoom.name,
           price: selectedRoom.price,
         },
         totalCost,
-        checkIn: data.checkIn,
-        checkOut: data.checkOut,
-        adultCount: data.adultCount,
-        childCount: data.childCount,
+        checkIn,
+        checkOut,
+        adultCount,
+        childCount,
         nights,
       },
     });
   };
 
-  const onSubmit = (data: GuestInfoFormData) =>
-    navigateWithBookingData(data, `/hotel/${hotelId}/booking`);
+  const handleSignInRedirect = () => {
+    if (!checkIn || !checkOut) return;
 
-  const onSignInClick = (data: GuestInfoFormData) =>
-    navigateWithBookingData(data, "/sign-in");
+    search.saveSearchValues("", checkIn, checkOut, adultCount, childCount);
+
+    navigate(`/sign-in?redirectTo=/detail/${hotelId}`, {
+      state: {
+        fromHotelId: hotelId,
+      },
+    });
+  };
 
   return (
     <div className="flex flex-col p-4 bg-blue-200 gap-4 sticky top-4 self-start">
       <h3 className="text-md font-bold">
-        {selectedRoom.name}
-        {nights > 0 && ` – Total: $${totalCost}`}
+        {selectedRoom ? (
+          <>
+            {selectedRoom.name}
+            {nights > 0 && ` – Total: $${totalCost}`}
+          </>
+        ) : (
+          <span className="text-sm text-red-600 font-medium">
+            Nu există camere disponibile. Te rugăm să modifici datele sau
+            numărul de oaspeți.
+          </span>
+        )}
       </h3>
 
-      <form
-        onSubmit={
-          isLoggedIn ? handleSubmit(onSubmit) : handleSubmit(onSignInClick)
-        }
-      >
-        <div className="grid grid-cols-1 gap-4 items-center">
-          <input type="hidden" {...register("roomTypeName")} />
-          <div>
-            <DatePicker
-              required
-              selected={checkIn}
-              onChange={(date) => setValue("checkIn", date as Date)}
-              selectsStart
-              startDate={checkIn}
-              endDate={checkOut}
-              minDate={minDate}
-              maxDate={maxDate}
-              placeholderText="Check-in Date"
-              className="min-w-full bg-white p-2 focus:outline-none"
-              wrapperClassName="min-w-full"
-            />
-          </div>
-          <div>
-            <DatePicker
-              required
-              selected={checkOut}
-              onChange={(date) => setValue("checkOut", date as Date)}
-              selectsEnd
-              startDate={checkIn}
-              endDate={checkOut}
-              minDate={checkIn || minDate}
-              maxDate={maxDate}
-              placeholderText="Check-out Date"
-              className="min-w-full bg-white p-2 focus:outline-none"
-              wrapperClassName="min-w-full"
-            />
-          </div>
-          <div className="flex bg-white px-2 py-1 gap-2">
-            <label className="items-center flex">
-              Adults:
-              <input
-                className="w-full p-1 focus:outline-none font-bold"
-                type="number"
-                min={1}
-                max={20}
-                {...register("adultCount", {
-                  required: "This field is required",
-                  min: {
-                    value: 1,
-                    message: "There must be at least one adult",
-                  },
-                  valueAsNumber: true,
-                })}
-              />
-            </label>
-            <label className="items-center flex">
-              Children:
-              <input
-                className="w-full p-1 focus:outline-none font-bold"
-                type="number"
-                min={0}
-                max={20}
-                {...register("childCount", {
-                  valueAsNumber: true,
-                })}
-              />
-            </label>
-            {errors.adultCount && (
-              <span className="text-red-500 font-semibold text-sm">
-                {errors.adultCount.message}
-              </span>
-            )}
-          </div>
-          <button className="bg-blue-600 text-white h-full p-2 font-bold hover:bg-blue-500 text-xl">
-            {isLoggedIn ? "Book Now" : "Sign in to Book"}
-          </button>
+      <div className="grid grid-cols-1 gap-4 items-center">
+        <div>
+          <DatePicker
+            required
+            selected={checkIn}
+            onChange={(date) => setCheckIn(date as Date)}
+            selectsStart
+            startDate={checkIn}
+            endDate={checkOut}
+            minDate={minDate}
+            maxDate={maxDate}
+            placeholderText="Check-in Date"
+            className="min-w-full bg-white p-2 focus:outline-none"
+            wrapperClassName="min-w-full"
+          />
         </div>
-      </form>
+        <div>
+          <DatePicker
+            required
+            selected={checkOut}
+            onChange={(date) => setCheckOut(date as Date)}
+            selectsEnd
+            startDate={checkIn}
+            endDate={checkOut}
+            minDate={checkIn || minDate}
+            maxDate={maxDate}
+            placeholderText="Check-out Date"
+            className="min-w-full bg-white p-2 focus:outline-none"
+            wrapperClassName="min-w-full"
+          />
+        </div>
+        <div className="flex bg-white px-2 py-1 gap-2">
+          <label className="items-center flex">
+            Adults:
+            <input
+              className="w-full p-1 focus:outline-none font-bold"
+              type="number"
+              min={1}
+              max={20}
+              value={adultCount}
+              onChange={(e) => setAdultCount(parseInt(e.target.value))}
+              required
+            />
+          </label>
+          <label className="items-center flex">
+            Children:
+            <input
+              className="w-full p-1 focus:outline-none font-bold"
+              type="number"
+              min={0}
+              max={20}
+              value={childCount}
+              onChange={(e) => setChildCount(parseInt(e.target.value))}
+            />
+          </label>
+        </div>
+        <button
+          onClick={isLoggedIn ? handleSubmit : handleSignInRedirect}
+          disabled={!selectedRoom}
+          className={`${
+            selectedRoom ? "bg-blue-600 hover:bg-blue-500" : "bg-gray-400"
+          } text-white h-full p-2 font-bold text-xl transition-colors`}
+        >
+          {isLoggedIn ? "Book Now" : "Sign in to Book"}
+        </button>
+      </div>
     </div>
   );
 };

@@ -1,8 +1,14 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as apiClient from "../api-client";
+import ConfirmDialog from "../components/ConfirmDialog";
+import { useState } from "react";
 
 const MyBookings = () => {
   const queryClient = useQueryClient();
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [bookingIdToCancel, setBookingIdToCancel] = useState<string | null>(
+    null
+  );
 
   const {
     data: hotels = [],
@@ -20,10 +26,17 @@ const MyBookings = () => {
     },
   });
 
-  const handleCancel = (bookingId: string) => {
-    if (confirm("Are you sure you want to cancel this booking?")) {
-      cancelBookingMutation.mutate(bookingId);
+  const handleCancelClick = (bookingId: string) => {
+    setBookingIdToCancel(bookingId);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmCancel = () => {
+    if (bookingIdToCancel) {
+      cancelBookingMutation.mutate(bookingIdToCancel);
     }
+    setConfirmOpen(false);
+    setBookingIdToCancel(null);
   };
 
   const hasBookings = hotels.some((hotel) => hotel.bookings.length > 0);
@@ -44,96 +57,117 @@ const MyBookings = () => {
         )}
 
         {!isLoading && !error && !hasBookings && (
-          <p className="text-gray-500  mt-1 ml-1">No bookings found.</p>
+          <p className="text-gray-500 mt-1 ml-1">No bookings found.</p>
         )}
 
         {!isLoading &&
           !error &&
           hasBookings &&
-          hotels.map((hotel) =>
-            hotel.bookings.map((booking, index) => {
-              const checkInDate = new Date(booking.checkIn);
-              const today = new Date();
-              today.setHours(0, 0, 0, 0);
-              const isCancelable =
-                checkInDate > today && booking.status !== "canceled";
+          hotels.map((hotel) => {
+            if (hotel.bookings.length === 0) return null;
 
-              return (
-                <div
-                  key={booking._id}
-                  className="grid grid-cols-1 lg:grid-cols-[1fr_3fr] border border-slate-300 rounded-lg p-8 gap-5"
-                >
-                  <div className="lg:w-full lg:h-[250px]">
-                    <img
-                      src={hotel.imageUrls[0]}
-                      className="w-full h-full object-cover object-center"
-                      alt={hotel.name}
-                    />
-                  </div>
-                  <div className="flex flex-col gap-4 overflow-y-auto max-h-[300px]">
-                    <div className="text-2xl font-bold">
-                      {hotel.name}
-                      <div className="text-xs font-normal">
-                        {hotel.city}, {hotel.country}
-                      </div>
+            return (
+              <div
+                key={hotel._id}
+                className="grid grid-cols-1 lg:grid-cols-[1fr_3fr] border border-slate-300 rounded-lg p-8 gap-5"
+              >
+                <div className="lg:w-full lg:h-[250px]">
+                  <img
+                    src={hotel.imageUrls[0]}
+                    className="w-full h-full object-cover object-center"
+                    alt={hotel.name}
+                  />
+                </div>
+                <div className="flex flex-col overflow-y-auto max-h-[300px]">
+                  <div className="text-2xl font-bold mb-2">
+                    {hotel.name}
+                    <div className="text-xs font-normal">
+                      {hotel.city}, {hotel.country}
                     </div>
+                  </div>
 
-                    <div className="pt-4">
-                      {index > 0 && (
-                        <hr className="w-80 border-t border-gray-300 mb-2" />
-                      )}
+                  {hotel.bookings.map((booking, index) => {
+                    const checkInDate = new Date(booking.checkIn);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const isCancelable =
+                      checkInDate > today && booking.status !== "canceled";
 
-                      <div className="flex justify-between items-start gap-4">
-                        <div className="space-y-1">
-                          <div>
-                            <span className="font-bold mr-2">Dates:</span>
-                            <span>
-                              {checkInDate.toDateString()} -{" "}
-                              {new Date(booking.checkOut).toDateString()}
-                            </span>
-                          </div>
-                          <div>
-                            <span className="font-bold mr-2">Guests:</span>
-                            <span>
-                              {booking.adultCount} adults, {booking.childCount}{" "}
-                              children
-                            </span>
-                          </div>
-                          <div>
-                            <span className="font-bold mr-2">Status:</span>
-                            {booking.status === "canceled" ? (
-                              <span className="text-red-600 font-semibold">
-                                ❌ Canceled
+                    return (
+                      <div key={booking._id}>
+                        <div className="flex justify-between items-start gap-4 py-2">
+                          <div className="space-y-1">
+                            <div>
+                              <span className="font-bold mr-2">Dates:</span>
+                              <span>
+                                {checkInDate.toDateString()} -{" "}
+                                {new Date(booking.checkOut).toDateString()}
                               </span>
-                            ) : (
-                              <span className="text-green-600 font-semibold">
-                                ✅ Confirmed
+                            </div>
+                            <div>
+                              <span className="font-bold mr-2">Guests:</span>
+                              <span>
+                                {booking.adultCount} adults,{" "}
+                                {booking.childCount} children
                               </span>
-                            )}
+                            </div>
+                            <div>
+                              <span className="font-bold mr-2">Room:</span>
+                              <span>{booking.roomTypeName}</span>
+                            </div>
+                            <div>
+                              <span className="font-bold mr-2">Status:</span>
+                              {booking.status === "canceled" ? (
+                                <span className="text-red-600 font-semibold">
+                                  ❌ Canceled
+                                </span>
+                              ) : (
+                                <span className="text-green-600 font-semibold">
+                                  ✅ Confirmed
+                                </span>
+                              )}
+                            </div>
                           </div>
+
+                          {isCancelable && (
+                            <div className="flex flex-col items-end mt-[22px] pr-10">
+                              <button
+                                onClick={() => handleCancelClick(booking._id)}
+                                className="px-4 py-1 text-sm border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition duration-200"
+                              >
+                                Cancel
+                              </button>
+                              <span className="text-xs text-gray-500 mt-1">
+                                * Free cancellation
+                              </span>
+                            </div>
+                          )}
                         </div>
 
-                        {isCancelable && (
-                          <div className="flex flex-col items-end mt-[22px] pr-10">
-                            <button
-                              onClick={() => handleCancel(booking._id)}
-                              className="px-4 py-1 text-sm border border-red-500 text-red-500 rounded hover:bg-red-500 hover:text-white transition duration-200"
-                            >
-                              Cancel
-                            </button>
-                            <span className="text-xs text-gray-500 mt-1">
-                              * Free cancellation
-                            </span>
+                        {index < hotel.bookings.length - 1 && (
+                          <div className=" my-4">
+                            <hr className="w-80 border-t border-gray-300" />
                           </div>
                         )}
                       </div>
-                    </div>
-                  </div>
+                    );
+                  })}
                 </div>
-              );
-            })
-          )}
+              </div>
+            );
+          })}
       </div>
+
+      {/* ✅ Confirmation Dialog */}
+      <ConfirmDialog
+        title="Cancel Booking"
+        message="Are you sure you want to cancel this booking?"
+        isOpen={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmCancel}
+        confirmText="Cancel"
+        cancelText="Go Back"
+      />
     </div>
   );
 };

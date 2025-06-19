@@ -33,6 +33,7 @@ export type HotelType = {
     adults: number;
     children: number;
     totalRooms: number;
+    isAvailable?: boolean;
   }[];
   bookings: BookingType[];
   reviews: {

@@ -123,11 +123,55 @@ router.get(
 
     const id = req.params.id.toString();
 
+    const checkIn = req.query.checkIn
+      ? new Date(req.query.checkIn.toString())
+      : null;
+    const checkOut = req.query.checkOut
+      ? new Date(req.query.checkOut.toString())
+      : null;
+
+    const adultCount = parseInt(req.query.adultCount?.toString() || "1");
+    const childCount = parseInt(req.query.childCount?.toString() || "0");
+
     try {
-      const hotel = await Hotel.findById(id);
-      res.json(hotel);
+      const hotel = await Hotel.findById(id).lean();
+
+      if (!hotel) {
+        res.status(404).json({ message: "Hotel not found" });
+        return;
+      }
+
+      // Add availability flag to each room
+      const updatedRoomTypes = hotel.roomTypes.map((room: any) => {
+        const isCapacityOk =
+          room.adults >= adultCount && room.children >= childCount;
+
+        if (!isCapacityOk || !checkIn || !checkOut) {
+          return { ...room, isAvailable: false };
+        }
+
+        const overlappingBookings = hotel.bookings.filter(
+          (booking: any) =>
+            booking.roomTypeName === room.name &&
+            booking.status !== "canceled" &&
+            new Date(booking.checkIn) < checkOut &&
+            new Date(booking.checkOut) > checkIn
+        );
+
+        const isAvailable = overlappingBookings.length < room.totalRooms;
+
+        return {
+          ...room,
+          isAvailable,
+        };
+      });
+
+      res.json({
+        ...hotel,
+        roomTypes: updatedRoomTypes,
+      });
     } catch (error) {
-      console.log(error);
+      console.log("error", error);
       res.status(500).json({ message: "Error fetching hotel" });
     }
   }
@@ -451,15 +495,22 @@ router.get("/:id/available-rooms", async (req: Request, res: Response) => {
 
   try {
     const hotel = await Hotel.findById(hotelId).lean();
+
     if (!hotel || !checkIn || !checkOut) {
       res.status(404).json({ message: "Missing data" });
       return;
     }
 
-    const availableRooms = hotel.roomTypes.filter((room) => {
+    const roomTypesWithAvailability = hotel.roomTypes.map((room) => {
       const isCapacityOk =
         room.adults >= adultCount && room.children >= childCount;
-      if (!isCapacityOk) return false;
+
+      if (!isCapacityOk) {
+        return {
+          ...room,
+          isAvailable: false,
+        };
+      }
 
       const overlappingBookings = hotel.bookings.filter(
         (booking) =>
@@ -469,13 +520,20 @@ router.get("/:id/available-rooms", async (req: Request, res: Response) => {
           new Date(booking.checkOut) > checkIn
       );
 
-      return overlappingBookings.length < room.totalRooms;
+      const isAvailable = overlappingBookings.length < room.totalRooms;
+
+      return {
+        ...room,
+        isAvailable,
+      };
     });
 
-    res.json({ roomTypes: availableRooms });
+    res.json({ roomTypes: roomTypesWithAvailability });
+    return;
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Error fetching available rooms" });
+    return;
   }
 });
 

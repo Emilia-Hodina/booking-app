@@ -41,20 +41,23 @@ router.post(
   ],
   upload.array("imageFiles", 6),
   async (req: Request, res: Response) => {
+    console.log("Creating hotel with body:", req.body);
     try {
       const imageFiles = req.files as Express.Multer.File[];
 
-      const roomTypes = [];
-      for (let i = 0; req.body[`roomTypes[${i}][name]`]; i++) {
-        roomTypes.push({
-          name: req.body[`roomTypes[${i}][name]`],
-          price: Number(req.body[`roomTypes[${i}][price]`]),
-          adults: Number(req.body[`roomTypes[${i}][adults]`]),
-          children: Number(req.body[`roomTypes[${i}][children]`]),
-          totalRooms: Number(req.body[`roomTypes[${i}][totalRooms]`]),
-        });
+      let roomTypes = [];
+      if (typeof req.body.roomTypes === "string") {
+        console.log("TESTING roomTypes string:", req.body.roomTypes);
+        roomTypes = JSON.parse(req.body.roomTypes);
+      } else if (Array.isArray(req.body.roomTypes)) {
+        roomTypes = req.body.roomTypes.map((room: any) => ({
+          name: room.name,
+          price: Number(room.price),
+          adults: Number(room.adults),
+          children: Number(room.children),
+          totalRooms: Number(room.totalRooms),
+        }));
       }
-
       const facilities =
         Array.isArray(req.body.facilities) &&
         typeof req.body.facilities !== "string"
@@ -78,6 +81,8 @@ router.post(
         imageUrls: [] as string[],
         lastUpdated: new Date(),
       };
+
+      console.log("roomTypes", roomTypes);
 
       const uploadPromises = imageFiles.map(async (image) => {
         const b64 = Buffer.from(image.buffer).toString("base64");
@@ -123,6 +128,30 @@ router.get("/:id", verifyToken, async (req: Request, res: Response) => {
     res.status(500).json({ message: "Error fetching hotel" });
   }
 });
+
+// GET /api/hotels/:hotelId/bookings
+router.get(
+  "/:hotelId/bookings",
+  verifyToken,
+  async (req: Request, res: Response) => {
+    try {
+      const hotel = await Hotel.findOne({
+        _id: req.params.hotelId,
+        userId: req.userId, // Ensure only the hotel owner can access
+      });
+
+      if (!hotel) {
+        res.status(404).json({ message: "Hotel not found" });
+        return;
+      }
+
+      res.status(200).json(hotel.bookings || []);
+    } catch (error) {
+      console.error("Error fetching hotel bookings:", error);
+      res.status(500).json({ message: "Error fetching hotel bookings" });
+    }
+  }
+);
 
 // Update hotel
 router.put(

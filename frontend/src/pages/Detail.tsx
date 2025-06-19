@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 import { UseAppContext } from "../contexts/AppContext";
 import HotelLocationMap from "../components/HotelLocationMap";
 import { HotelType } from "../../../backend/src/shared/types";
+import { UseSearchContext } from "../contexts/SearchContext";
+import RoomSelector from "../components/RoomSelector";
 
 const Detail = () => {
   const { hotelId } = useParams();
@@ -20,11 +22,26 @@ const Detail = () => {
     HotelType["roomTypes"][0] | null
   >(null);
 
+  const search = UseSearchContext();
+
+  const [checkIn, setCheckIn] = useState<Date | null>(search.checkIn);
+  const [checkOut, setCheckOut] = useState<Date | null>(search.checkOut);
+  const [adultCount, setAdultCount] = useState<number>(search.adultCount);
+  const [childCount, setChildCount] = useState<number>(search.childCount);
+
   const { data: hotel } = useQuery({
     queryKey: ["fetchHotelById", hotelId, refreshReviews],
     queryFn: () => apiClient.fetchHotelById(hotelId || ""),
     enabled: !!hotelId,
   });
+
+  // const { data: hotel } = useQuery({
+  //   queryKey: ["fetchHotelById", hotelId, refreshReviews],
+  //   queryFn: () => apiClient.fetchHotelById(hotelId || ""),
+  //   enabled: !!hotelId,
+  // });
+
+  console.log("Hotel data:", hotel);
 
   const { data: currentUser } = useQuery({
     queryKey: ["currentUser"],
@@ -121,8 +138,9 @@ const Detail = () => {
 
       {/* New Section: Empty on Left, Book Now on Right */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-[2fr_1fr] gap-4">
-        <div className="bg-gray-100 h-full p-4 rounded-md space-y-4">
+        {/* <div className="bg-gray-100 h-full p-4 rounded-md space-y-4">
           <h3 className="text-lg font-semibold">Selectează tipul camerei</h3>
+
           <div className="space-y-2">
             {hotel.roomTypes.map((room) => (
               <div
@@ -132,9 +150,15 @@ const Detail = () => {
                     ? "border-blue-500 bg-blue-100"
                     : "border-gray-300"
                 }`}
-                onClick={() => setSelectedRoom(room)}
+                onClick={() => {
+                  if (room.isAvailable) {
+                    setSelectedRoom(room);
+                  }
+                }}
               >
                 <div>
+                  <p>{room.isAvailable}</p>
+
                   <div className="font-bold">{room.name}</div>
                   <div className="text-sm text-gray-600">
                     {room.adults} adulți, {room.children} copii
@@ -147,12 +171,30 @@ const Detail = () => {
               </div>
             ))}
           </div>
-        </div>
+        </div> */}
+        <RoomSelector
+          hotelId={hotel._id}
+          selectedRoom={selectedRoom}
+          onSelect={setSelectedRoom}
+          checkIn={checkIn}
+          checkOut={checkOut}
+          adultCount={adultCount}
+          childCount={childCount}
+        />
 
         <div className="sticky top-4 self-start h-fit z-[999] overflow-visible">
-          {selectedRoom && (
-            <GuestInfoForm selectedRoom={selectedRoom} hotelId={hotel._id} />
-          )}
+          <GuestInfoForm
+            selectedRoom={selectedRoom}
+            hotelId={hotel._id}
+            checkIn={checkIn}
+            setCheckIn={setCheckIn}
+            checkOut={checkOut}
+            setCheckOut={setCheckOut}
+            adultCount={adultCount}
+            setAdultCount={setAdultCount}
+            childCount={childCount}
+            setChildCount={setChildCount}
+          />
         </div>
       </div>
 
