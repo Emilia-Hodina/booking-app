@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import * as apiClient from "../api-client";
 import { UseAppContext } from "../contexts/AppContext";
 import { FaPlane } from "react-icons/fa";
@@ -15,6 +15,9 @@ const SignIn = () => {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const redirectTo = searchParams.get("redirectTo");
   const {
     register,
     formState: { errors },
@@ -45,8 +48,13 @@ const SignIn = () => {
         }
       }
 
-      if (user?.role === "admin" || user?.role === "user") {
+      if (redirectTo) {
+        console.log("WTFs");
+        navigate(redirectTo);
+      } else if (user?.role === "admin" || user?.role === "user") {
         navigate("/redirect");
+      } else {
+        navigate("/");
       }
     },
     onError: (error: Error) => {
