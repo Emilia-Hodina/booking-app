@@ -1,6 +1,10 @@
-import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import { getAdminDashboard, getTopHotels } from "../api-client";
+import { useEffect, useState, useCallback } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+import {
+  getAdminDashboard,
+  getBookingStatusBreakdown,
+  getTopHotels,
+} from "../api-client";
 import { UseAppContext } from "../contexts/AppContext";
 import { FaCalendarCheck, FaHotel, FaUser } from "react-icons/fa";
 import AdminPieChart from "../components/AdminPieChart";
@@ -24,42 +28,51 @@ const AdminDashboard = () => {
     score: number;
   };
 
+  type BookingStatus = {
+    _id: string;
+    count: number;
+  };
+
   const [data, setData] = useState<AdminDashboardData | null>(null);
   const [topHotels, setTopHotels] = useState<Hotel[]>([]);
+  const [bookingStatus, setBookingStatus] = useState<BookingStatus[]>([]);
   const { showToast, userRole, loadingUser } = UseAppContext();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const fetchData = useCallback(async () => {
+    try {
+      const [dashboardData, topHotelsData, bookingStatusData] =
+        await Promise.all([
+          getAdminDashboard(),
+          getTopHotels(),
+          getBookingStatusBreakdown(),
+        ]);
+
+      setData(dashboardData);
+      setTopHotels(topHotelsData);
+      setBookingStatus(bookingStatusData);
+    } catch (error) {
+      showToast({
+        message: "Failed to load dashboard data",
+        type: "ERROR",
+      });
+      navigate("/");
+      console.error("Error fetching dashboard data:", error);
+    }
+  }, [navigate, showToast]);
 
   useEffect(() => {
     if (loadingUser) return;
 
     if (userRole !== "admin") {
-      showToast({
-        message: "Unauthorized access",
-        type: "ERROR",
-      });
+      showToast({ message: "Unauthorized access", type: "ERROR" });
       navigate("/");
       return;
     }
 
-    const fetchData = async () => {
-      try {
-        const dashboardData = await getAdminDashboard();
-        const topHotelsData = await getTopHotels();
-
-        setData(dashboardData);
-        setTopHotels(topHotelsData);
-      } catch (error) {
-        showToast({
-          message: "Failed to load dashboard data",
-          type: "ERROR",
-        });
-        navigate("/");
-        console.error("Error fetching dashboard data:", error);
-      }
-    };
-
     fetchData();
-  }, [navigate, showToast, userRole, loadingUser]);
+  }, [location.key, loadingUser, userRole, fetchData, navigate, showToast]);
 
   if (loadingUser || !data) {
     return (
@@ -110,16 +123,17 @@ const AdminDashboard = () => {
         </div>
       </div>
 
+      {/* Charts Section */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
         <div className="col-span-1">
-          <AdminPieChart />
+          <AdminPieChart data={bookingStatus} />
         </div>
         <div className="col-span-2">
           <MonthlyBookingsChart />
         </div>
       </div>
 
-      {/* Top Hotels Leaderboard */}
+      {/* Leaderboard Section */}
       {topHotels.length > 0 && (
         <div className="mt-6">
           <TopHotelsLeaderboard data={topHotels} />

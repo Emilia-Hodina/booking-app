@@ -3,7 +3,6 @@ import verifyToken from "../middleware/auth";
 import authorizeRole from "../middleware/authorizeRole";
 import User from "../models/user";
 import Hotel from "../models/hotel";
-import Booking from "../models/hotel";
 
 const router = express.Router();
 
@@ -13,11 +12,21 @@ router.get(
   authorizeRole(["admin"]),
   async (req, res) => {
     try {
-      const [userCount, hotelCount, bookingCount] = await Promise.all([
+      const [userCount, hotelCount, hotelBookings] = await Promise.all([
         User.countDocuments(),
         Hotel.countDocuments(),
-        Booking.countDocuments(),
+        Hotel.aggregate([
+          { $project: { bookingCount: { $size: "$bookings" } } },
+          {
+            $group: {
+              _id: null,
+              totalBookings: { $sum: "$bookingCount" },
+            },
+          },
+        ]),
       ]);
+
+      const bookingCount = hotelBookings[0]?.totalBookings || 0;
 
       res.json({
         message: "Welcome Admin",
@@ -30,6 +39,32 @@ router.get(
     } catch (error) {
       console.error("Admin dashboard error:", error);
       res.status(500).json({ message: "Error loading admin stats" });
+    }
+  }
+);
+
+router.get(
+  "/booking-status",
+  verifyToken,
+  authorizeRole(["admin"]),
+  async (req, res) => {
+    try {
+      const breakdown = await Hotel.aggregate([
+        { $unwind: "$bookings" },
+        {
+          $group: {
+            _id: "$bookings.status",
+            count: { $sum: 1 },
+          },
+        },
+      ]);
+
+      res.json(breakdown);
+    } catch (error) {
+      console.error("Booking status breakdown error:", error);
+      res
+        .status(500)
+        .json({ message: "Failed to fetch booking status breakdown" });
     }
   }
 );
@@ -85,6 +120,8 @@ router.get(
         {
           $match: {
             "bookings.checkIn": { $exists: true },
+            "bookings.status": "confirmed",
+            "bookings.refunded": false,
           },
         },
         {
@@ -134,10 +171,7 @@ router.get(
     try {
       const hotels = await Hotel.find();
 
-      let maxBookings = 0;
-
-      const rawScores = hotels.map((hotel) => {
-        const bookings = hotel.bookings?.length || 0;
+      const rated = hotels.map((hotel) => {
         const reviews = hotel.reviews || [];
         const reviewCount = reviews.length;
 
@@ -146,35 +180,16 @@ router.get(
             ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviewCount
             : 0;
 
-        if (bookings > maxBookings) {
-          maxBookings = bookings;
-        }
-
         return {
           name: hotel.name,
-          bookings,
+          bookings: hotel.bookings?.length || 0,
           averageRating: Number(avgRating.toFixed(2)),
-          rawRating: avgRating,
-          rawBookings: bookings,
+          score: Number(avgRating.toFixed(2)), // scorul este doar ratingul
         };
       });
 
-      const scored = rawScores.map((hotel) => {
-        const normalizedBookings =
-          maxBookings > 0 ? hotel.rawBookings / maxBookings : 0;
-        const normalizedRating = hotel.rawRating / 10;
-
-        const score = (normalizedBookings * 0.5 + normalizedRating * 0.5) * 10;
-
-        return {
-          name: hotel.name,
-          bookings: hotel.rawBookings,
-          averageRating: hotel.averageRating,
-          score: Number(score.toFixed(2)),
-        };
-      });
-
-      const top5 = scored.sort((a, b) => b.score - a.score).slice(0, 5);
+      // Sortează după scor (rating descrescător)
+      const top5 = rated.sort((a, b) => b.score - a.score).slice(0, 5);
 
       res.json(top5);
     } catch (error) {

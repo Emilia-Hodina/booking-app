@@ -38,13 +38,14 @@ const TopHotelsLeaderboard = ({ data }: Props) => {
             <div className="flex-1">
               <p className="font-semibold">{hotel.name}</p>
               <div className="text-sm text-gray-500">
-                Bookings: {hotel.bookings} | Rating:{" "}
-                {hotel.averageRating.toFixed(1)} ⭐
+                Rating: {hotel.averageRating.toFixed(1)} ⭐
               </div>
               <div className="w-full bg-gray-200 h-2 rounded mt-1">
                 <div
                   className="bg-blue-600 h-2 rounded"
-                  style={{ width: `${Math.min(hotel.score, 100)}%` }}
+                  style={{
+                    width: `${Math.min(hotel.averageRating * 10, 100)}%`,
+                  }}
                 ></div>
               </div>
             </div>

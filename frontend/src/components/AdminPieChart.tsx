@@ -3,82 +3,59 @@ import {
   Pie,
   Cell,
   Tooltip,
-  ResponsiveContainer,
   Legend,
+  ResponsiveContainer,
 } from "recharts";
-import { useEffect, useState } from "react";
-import { getAdminDashboard } from "../api-client";
 
-const COLORS = [
-  "#0088FE",
-  "#00C49F",
-  "#FFBB28",
-  "#FF8042",
-  "#AF19FF",
-  "#FF5E78",
-];
-
-type PieData = {
-  name: string;
-  value: number;
+const COLORS = {
+  confirmed: "#4CAF50",
+  canceled: "#F44336",
 };
 
-type LabelRenderProps = {
-  name: string;
-  percent: number;
+type BookingStatusData = {
+  _id: string;
+  count: number;
 };
 
-const AdminPieChart = () => {
-  const [data, setData] = useState<PieData[]>([]);
+const AdminPieChart = ({ data }: { data?: BookingStatusData[] }) => {
+  if (!data || data.length === 0) {
+    return (
+      <div className="w-full col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6 text-center text-gray-500">
+        <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+          Booking Status Breakdown
+        </h2>
+        <p>No booking status data available.</p>
+      </div>
+    );
+  }
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const dashboardData = await getAdminDashboard();
-        const pieData = [
-          { name: "Bookings", value: dashboardData.stats.bookings },
-          { name: "Users", value: dashboardData.stats.users },
-          { name: "Hotels", value: dashboardData.stats.hotels },
-        ];
-        setData(pieData);
-      } catch (error) {
-        console.error("Failed to fetch pie chart data:", error);
-      }
-    };
-
-    fetchData();
-  }, []);
+  const chartData = data.map((item) => ({
+    name: item._id.charAt(0).toUpperCase() + item._id.slice(1),
+    value: item.count,
+    color: COLORS[item._id as keyof typeof COLORS] || "#8884d8",
+  }));
 
   return (
-    <div className="w-full md:max-w-sm bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-          Platform Overview
-        </h2>
-      </div>
+    <div className="w-full col-span-1 bg-white dark:bg-gray-800 rounded-lg shadow-sm p-6">
+      <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+        Booking Status Breakdown
+      </h2>
       <ResponsiveContainer width="100%" height={300}>
         <PieChart>
           <Pie
-            data={data}
+            data={chartData}
+            dataKey="value"
+            nameKey="name"
             cx="50%"
             cy="50%"
             outerRadius={100}
-            fill="#8884d8"
-            dataKey="value"
-            label={({ percent }: LabelRenderProps) =>
-              ` ${(percent * 100).toFixed(0)}% `
-            }
+            label
           >
-            {data.map((entry, index) => (
-              <Cell
-                key={`cell-${index}`}
-                fill={COLORS[index % COLORS.length]}
-              />
+            {chartData.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
             ))}
           </Pie>
-          <Tooltip
-            formatter={(value: number, name: string) => [`${value}`, name]}
-          />
+          <Tooltip />
           <Legend />
         </PieChart>
       </ResponsiveContainer>
