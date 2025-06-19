@@ -30,6 +30,7 @@ import TermsOfService from "./pages/TermsOfService";
 import BookingStatus from "./pages/BookingStatus";
 import Home from "./pages/Home";
 import AutoRedirect from "./pages/AutoRedirect";
+import HotelCalendar from "./pages/HotelCalendar";
 
 const App = () => {
   const { isLoggedIn, loadingUser } = UseAppContext();
@@ -136,6 +137,14 @@ const App = () => {
                 element={
                   <Layout>
                     <MyBookings />
+                  </Layout>
+                }
+              />
+              <Route
+                path="/my-hotels/:hotelId/calendar"
+                element={
+                  <Layout showSearch={false}>
+                    <HotelCalendar />
                   </Layout>
                 }
               />
