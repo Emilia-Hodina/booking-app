@@ -1,9 +1,12 @@
+import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import * as apiClient from "../api-client";
 import { BsBuilding, BsMap } from "react-icons/bs";
 import { BiStar } from "react-icons/bi";
 import { UseAppContext } from "../contexts/AppContext";
+import { FaRegCalendarAlt } from "react-icons/fa";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 const MyHotels = () => {
   const queryClient = useQueryClient();
@@ -14,16 +17,27 @@ const MyHotels = () => {
     queryFn: apiClient.fetchMyHotels,
   });
 
-  const handleDelete = async (hotelId: string) => {
-    if (window.confirm("Are you sure you want to delete this hotel?")) {
-      try {
-        await apiClient.deleteMyHotel(hotelId);
-        showToast({ message: "Hotel deleted successfully", type: "SUCCESS" });
-        queryClient.invalidateQueries({ queryKey: ["fetchMyHotels"] });
-      } catch (error) {
-        console.error("Error deleting hotel:", error);
-        showToast({ message: "Error deleting hotel", type: "ERROR" });
-      }
+  // State for popup dialog
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
+
+  const handleDeleteClick = (hotelId: string) => {
+    setSelectedHotelId(hotelId);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedHotelId) return;
+    try {
+      await apiClient.deleteMyHotel(selectedHotelId);
+      showToast({ message: "Hotel deleted successfully", type: "SUCCESS" });
+      queryClient.invalidateQueries({ queryKey: ["fetchMyHotels"] });
+    } catch (error) {
+      console.error("Error deleting hotel:", error);
+      showToast({ message: "Error deleting hotel", type: "ERROR" });
+    } finally {
+      setConfirmOpen(false);
+      setSelectedHotelId(null);
     }
   };
 
@@ -49,7 +63,13 @@ const MyHotels = () => {
               data-testid="hotel-card"
               className="flex flex-col justify-between border border-slate-300 rounded-lg p-8 gap-5"
             >
-              <h2 className="text-2xl font-bold">{hotel.name}</h2>
+              <div className="flex justify-between items-center">
+                <h2 className="text-2xl font-bold">{hotel.name}</h2>
+                <Link to={`/my-hotels/${hotel._id}/calendar`}>
+                  <FaRegCalendarAlt className="text-blue-600 hover:text-blue-800 text-xl" />
+                </Link>
+              </div>
+
               <div className="whitespace-pre-line">{hotel.description}</div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="border border-slate-300 rounded-sm p-3 flex items-center">
@@ -73,7 +93,7 @@ const MyHotels = () => {
                   View Details
                 </Link>
                 <button
-                  onClick={() => handleDelete(hotel._id)}
+                  onClick={() => handleDeleteClick(hotel._id)}
                   className="flex bg-red-600 text-white text-xl font-bold p-2 hover:bg-red-500"
                 >
                   Delete
@@ -83,6 +103,15 @@ const MyHotels = () => {
           ))}
         </div>
       )}
+
+      {/* Confirmation Modal */}
+      <ConfirmDialog
+        title="Delete Hotel"
+        message="Are you sure you want to delete this hotel?"
+        isOpen={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 };
