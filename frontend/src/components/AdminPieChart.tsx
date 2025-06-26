@@ -51,8 +51,8 @@ const AdminPieChart = ({ data }: { data?: BookingStatusData[] }) => {
             outerRadius={100}
             label
           >
-            {chartData.map((entry, index) => (
-              <Cell key={`cell-${index}`} fill={entry.color} />
+            {chartData.map(({ color }, index) => (
+              <Cell key={`cell-${index}`} fill={color} />
             ))}
           </Pie>
           <Tooltip />
