@@ -86,7 +86,7 @@ const HotelMapPicker = ({
   return (
     <div className="border rounded mt-2 overflow-hidden">
       <MapContainer
-        center={initialPosition || [45.7489, 21.2087]} // Default to Timisoara
+        center={initialPosition || [45.7489, 21.2087]}
         zoom={13}
         style={{ height: "300px", width: "100%" }}
       >

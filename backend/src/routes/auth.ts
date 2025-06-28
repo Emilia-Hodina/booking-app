@@ -92,7 +92,7 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
     // Generate a unique token
     const resetToken = crypto.randomBytes(32).toString("hex");
     user.resetToken = resetToken;
-    user.resetTokenExpiry = Date.now() + 3600000; // 1 hour
+    user.resetTokenExpiry = Date.now() + 3600000;
     await user.save();
 
     // Create Nodemailer Transporter with a fixed email
