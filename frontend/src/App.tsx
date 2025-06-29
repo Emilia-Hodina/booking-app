@@ -31,6 +31,7 @@ import BookingStatus from "./pages/BookingStatus";
 import Home from "./pages/Home";
 import AutoRedirect from "./pages/AutoRedirect";
 import HotelCalendar from "./pages/HotelCalendar";
+import TawkToWidget from "./components/TawkToWidget";
 
 const App = () => {
   const { isLoggedIn, loadingUser } = UseAppContext();
@@ -41,6 +42,7 @@ const App = () => {
 
   return (
     <FavoritesProvider>
+      <TawkToWidget />
       <Router>
         <Routes>
           <Route
