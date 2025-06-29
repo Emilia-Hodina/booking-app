@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import verifyToken from "../middleware/auth";
 import nodemailer from "nodemailer";
 import crypto from "crypto";
+import { getResetPasswordEmail } from "../utils/templates";
 
 const router = express.Router();
 
@@ -95,6 +96,12 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
     user.resetTokenExpiry = Date.now() + 3600000;
     await user.save();
 
+    const resetLink = `${process.env.FRONTEND_URL}/reset-password?token=${user.resetToken}`;
+    const html = getResetPasswordEmail(
+      `${user.firstName} ${user.lastName}`,
+      resetLink
+    );
+
     // Create Nodemailer Transporter with a fixed email
     var transporter = nodemailer.createTransport({
       service: "gmail",
@@ -105,15 +112,16 @@ router.post("/forgot-password", async (req: Request, res: Response) => {
     });
 
     var mailOptions = {
-      from: "emiliahodina@gmail.com",
+      from: `"Wandr" <emiliahodina@gmail.com>`,
       to: user.email,
       subject: "Reset your password",
-      text: `Click the link to reset your password: http://localhost:5173/reset-password?token=${user.resetToken}`,
+      // text: `Click the link to reset your password: http://localhost:5173/reset-password?token=${user.resetToken}`,
+      html,
     };
 
     transporter.sendMail(mailOptions, function (error, info) {
       if (error) {
-        console.error("Error sending email:", error); // Log detailed error
+        console.error("Error sending email:", error);
         res
           .status(500)
           .json({ message: "Error sending email", error: error.message });
