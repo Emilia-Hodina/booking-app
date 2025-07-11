@@ -3,12 +3,16 @@ import { UseAppContext } from "../contexts/AppContext";
 import { getAllHotels, deleteHotel } from "../api-client";
 import { HotelType } from "../../../backend/src/shared/types";
 import { FaTrash } from "react-icons/fa";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 const HotelManagement = () => {
   const { showToast } = UseAppContext();
   const [hotels, setHotels] = useState<HotelType[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedHotelId, setSelectedHotelId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchHotels = async () => {
@@ -26,14 +30,23 @@ const HotelManagement = () => {
     fetchHotels();
   }, [showToast]);
 
-  const handleDelete = async (hotelId: string) => {
+  const handleDeleteClick = (hotelId: string) => {
+    setSelectedHotelId(hotelId);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedHotelId) return;
     try {
-      await deleteHotel(hotelId);
-      setHotels((prev) => prev.filter((h) => h._id !== hotelId));
+      await deleteHotel(selectedHotelId);
+      setHotels((prev) => prev.filter((h) => h._id !== selectedHotelId));
       showToast({ message: "Hotel deleted", type: "SUCCESS" });
     } catch (err) {
       showToast({ message: "Failed to delete hotel", type: "ERROR" });
       console.error(err);
+    } finally {
+      setConfirmOpen(false);
+      setSelectedHotelId(null);
     }
   };
 
@@ -99,7 +112,7 @@ const HotelManagement = () => {
                   </td>
                   <td className="p-3 text-right">
                     <button
-                      onClick={() => handleDelete(hotel._id)}
+                      onClick={() => handleDeleteClick(hotel._id)}
                       className="text-red-600 hover:text-red-800"
                     >
                       <FaTrash />
@@ -110,6 +123,15 @@ const HotelManagement = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        title="Delete Hotel"
+        message="Are you sure you want to delete this hotel?"
+        isOpen={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 };

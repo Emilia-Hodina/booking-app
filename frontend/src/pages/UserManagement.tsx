@@ -3,12 +3,16 @@ import { UseAppContext } from "../contexts/AppContext";
 import { getAllUsers, deleteUser } from "../api-client";
 import { UserType } from "../../../backend/src/shared/types";
 import { FaTrash } from "react-icons/fa";
+import ConfirmDialog from "../components/ConfirmDialog";
 
 const UserManagement = () => {
   const { showToast } = UseAppContext();
   const [users, setUsers] = useState<UserType[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -26,14 +30,23 @@ const UserManagement = () => {
     fetchUsers();
   }, [showToast]);
 
-  const handleDelete = async (userId: string) => {
+  const handleDeleteClick = (userId: string) => {
+    setSelectedUserId(userId);
+    setConfirmOpen(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!selectedUserId) return;
     try {
-      await deleteUser(userId);
-      setUsers((prev) => prev.filter((u) => u._id !== userId));
+      await deleteUser(selectedUserId);
+      setUsers((prev) => prev.filter((u) => u._id !== selectedUserId));
       showToast({ message: "User deleted", type: "SUCCESS" });
     } catch (err) {
       console.error(err);
       showToast({ message: "Failed to delete user", type: "ERROR" });
+    } finally {
+      setConfirmOpen(false);
+      setSelectedUserId(null);
     }
   };
 
@@ -96,7 +109,7 @@ const UserManagement = () => {
                 <td className="p-3 whitespace-nowrap">{user.phoneNumber}</td>
                 <td className="p-3 text-right">
                   <button
-                    onClick={() => handleDelete(user._id)}
+                    onClick={() => handleDeleteClick(user._id)}
                     className="text-red-600 hover:text-red-800"
                   >
                     <FaTrash />
@@ -107,6 +120,15 @@ const UserManagement = () => {
           </tbody>
         </table>
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        title="Delete User"
+        message="Are you sure you want to delete this user?"
+        isOpen={confirmOpen}
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 };
