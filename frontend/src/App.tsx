@@ -34,15 +34,17 @@ import HotelCalendar from "./pages/HotelCalendar";
 import TawkToWidget from "./components/TawkToWidget";
 
 const App = () => {
-  const { isLoggedIn, loadingUser } = UseAppContext();
+  const { isLoggedIn, loadingUser, userRole } = UseAppContext();
 
   if (loadingUser) {
     return null;
   }
 
+  const isAdmin = userRole === "admin";
+
   return (
     <FavoritesProvider>
-      <TawkToWidget />
+      {userRole !== null && !isAdmin && <TawkToWidget />}
       <Router>
         <Routes>
           <Route
