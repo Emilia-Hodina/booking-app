@@ -90,12 +90,17 @@ const HotelManagement = () => {
           </thead>
           <tbody>
             {hotels
-              .filter((hotel) =>
-                hotel.name
-                  .toLowerCase()
-                  .trim()
-                  .startsWith(searchTerm.toLowerCase().trim())
-              )
+              .filter((hotel) => {
+                const term = searchTerm.toLowerCase().trim();
+                return (
+                  term === "" ||
+                  hotel.name
+                    .toLowerCase()
+                    .split(" ")
+                    .some((word) => word.startsWith(term))
+                );
+              })
+
               .map((hotel) => (
                 <tr
                   key={hotel._id}

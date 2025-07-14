@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 import User from "../models/user";
 import { check, validationResult } from "express-validator";
 import verifyToken from "../middleware/auth";
@@ -53,28 +54,18 @@ router.post(
         return;
       }
 
+      const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
       user = new User({
         firstName: req.body.firstName,
         lastName: req.body.lastName,
         email: req.body.email,
-        password: req.body.password,
+        password: hashedPassword,
         country: req.body.country,
         phoneNumber: req.body.phoneNumber,
       });
 
       await user.save();
-
-      const token = jwt.sign(
-        { userId: user.id },
-        process.env.JWT_SECRET_KEY as string,
-        { expiresIn: "1d" }
-      );
-
-      res.cookie("auth_token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        maxAge: 86400000,
-      });
 
       res.status(200).send({ message: "User registered successfully" });
     } catch (error) {

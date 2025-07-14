@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import * as apiClient from "../api-client";
 import ConfirmDialog from "../components/ConfirmDialog";
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 const MyBookings = () => {
   const queryClient = useQueryClient();
@@ -72,11 +73,13 @@ const MyBookings = () => {
                 className="grid grid-cols-1 lg:grid-cols-[1fr_3fr] border border-slate-300 rounded-lg p-8 gap-5"
               >
                 <div className="lg:w-full lg:h-[250px]">
-                  <img
-                    src={hotel.imageUrls[0]}
-                    className="w-full h-full object-cover object-center"
-                    alt={hotel.name}
-                  />
+                  <Link to={`/detail/${hotel._id}`}>
+                    <img
+                      src={hotel.imageUrls[0]}
+                      className="w-full h-full object-cover object-center rounded hover:opacity-90 transition"
+                      alt={hotel.name}
+                    />
+                  </Link>
                 </div>
                 <div className="flex flex-col overflow-y-auto max-h-[300px]">
                   <div className="text-2xl font-bold mb-2">

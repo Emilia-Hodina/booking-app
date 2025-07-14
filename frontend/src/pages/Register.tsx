@@ -38,7 +38,7 @@ const Register = () => {
     onSuccess: async () => {
       showToast({ message: "Account created successfully", type: "SUCCESS" });
       await queryClient.invalidateQueries({ queryKey: ["validateToken"] });
-      navigate("/");
+      navigate("/sign-in");
     },
     onError: (error) => {
       showToast({ message: error.message, type: "ERROR" });
