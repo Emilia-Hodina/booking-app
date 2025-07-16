@@ -27,6 +27,15 @@ const SearchBar = () => {
     navigate("/search");
   };
 
+  const handleClear = () => {
+    setDestination("");
+    const today = new Date();
+    setCheckIn(today);
+    setCheckOut(today);
+    setAdultCount(1);
+    setChildCount(0);
+  };
+
   const minDate = new Date();
   const maxDate = new Date();
   maxDate.setFullYear(maxDate.getFullYear() + 1);
@@ -56,7 +65,9 @@ const SearchBar = () => {
               min={1}
               max={20}
               value={adultCount}
-              onChange={(event) => setAdultCount(parseInt(event.target.value))}
+              onChange={(event) =>
+                setAdultCount(parseInt(event.target.value) || 1)
+              }
             />
           </label>
           <label className="items-center flex">
@@ -67,10 +78,13 @@ const SearchBar = () => {
               min={0}
               max={20}
               value={childCount}
-              onChange={(event) => setChildCount(parseInt(event.target.value))}
+              onChange={(event) =>
+                setChildCount(parseInt(event.target.value) || 0)
+              }
             />
           </label>
         </div>
+
         <div>
           <DatePicker
             selected={checkIn}
@@ -85,6 +99,7 @@ const SearchBar = () => {
             wrapperClassName="min-w-full"
           />
         </div>
+
         <div>
           <DatePicker
             selected={checkOut}
@@ -99,11 +114,19 @@ const SearchBar = () => {
             wrapperClassName="min-w-full"
           />
         </div>
+
         <div className="flex gap-1">
-          <button className="w-2/3 bg-blue-600 text-white h-full p-2 font-bold text-xl hover:bg-blue-500">
+          <button
+            type="submit"
+            className="w-2/3 bg-blue-600 text-white h-full p-2 font-bold text-xl hover:bg-blue-500"
+          >
             Search
           </button>
-          <button className="w-1/3 bg-red-600 text-white h-full p-2 font-bold text-xl hover:bg-red-500">
+          <button
+            type="button"
+            onClick={handleClear}
+            className="w-1/3 bg-red-600 text-white h-full p-2 font-bold text-xl hover:bg-red-500"
+          >
             Clear
           </button>
         </div>
