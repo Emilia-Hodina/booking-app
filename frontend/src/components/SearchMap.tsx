@@ -1,6 +1,7 @@
 import { MapContainer, TileLayer, Marker, Popup } from "react-leaflet";
 import L from "leaflet";
 import { HotelWithMatchedRoom } from "../../../backend/src/shared/types"; // changed this import to match the other file
+import MapFitBounds from "./MapFitBounds";
 
 interface Props {
   hotels: HotelWithMatchedRoom[]; // changed to include matchedRoom
@@ -91,6 +92,13 @@ const SearchMap = ({ hotels }: Props) => {
             </Popup>
           </Marker>
         ))}
+
+        <MapFitBounds
+          bounds={hotelsWithLocation.map((hotel) => [
+            hotel.location.lat,
+            hotel.location.lng,
+          ])}
+        />
       </MapContainer>
     </div>
   );
