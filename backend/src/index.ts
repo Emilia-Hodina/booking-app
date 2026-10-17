@@ -12,6 +12,11 @@ import hotelRoutes from "./routes/hotels";
 import bookingRoutes from "./routes/my-bookings";
 import favoritesRoutes from "./routes/favorites";
 import adminRoutes from "./routes/admin";
+import dns from "node:dns";
+
+dns.setServers(["1.1.1.1", "1.0.0.1"]);
+
+const MONGO_URI = process.env.MONGO_URI;
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
@@ -29,7 +34,7 @@ app.use(
   cors({
     origin: process.env.FRONTEND_URL,
     credentials: true,
-  })
+  }),
 );
 
 app.use(express.static(path.join(__dirname, "../../frontend/dist")));
